@@ -42,3 +42,8 @@ model RefreshToken {
   createdAt DateTime @default(now())
   revoked   Boolean  @default(false)
 }
+// 文章模型
+model Article {
+    
+}
+
