@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LoginDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
@@ -76,6 +76,18 @@ export class AuthService {
   }
   //手机号登录
   loginByPhoneEmail(user: LoginDto) {}
+
+  //注册
+  async registerUser() {
+    const hashedPassword = await bcrypt.hash('123456', 10);
+    const newUser = await this.prisma.user.create({
+      data: {
+        username: 'admin',
+        password: hashedPassword,
+      },
+    });
+    return newUser;
+  }
 
   //   register(user: User) {
   //     return user;

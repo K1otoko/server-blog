@@ -12,26 +12,53 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+//用户权限
 enum UserRole {
   ADMIN
   USER
   MODERATOR
 }
+
+//审核状态
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+//文章状态
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+//文章可见性
+enum PostVisibility {
+  PUBLIC
+  PRIVATE
+  PASSWORD
+}
+
 //用户模型
 model User {
-  id  String  @id @default(uuid())
-  username  String  @unique
-  email     String?   @unique
-  password  String
-  name      String?
-  role  UserRole @default(USER)
-  avatar String?
-  phone String? @unique
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id            String         @id @default(uuid())
+  username      String         @unique
+  email         String?        @unique
+  password      String
+  name          String?
+  role          UserRole       @default(USER)
+  avatar        String?
+  phone         String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
-  lastLoginAt DateTime?
+  posts         Post[]         @relation("PostToUser", map: "user_posts_fkey")
+  lastLoginAt   DateTime?
 }
+
 // 刷新令牌模型
 model RefreshToken {
   id        String   @id @default(uuid())
@@ -42,8 +69,75 @@ model RefreshToken {
   createdAt DateTime @default(now())
   revoked   Boolean  @default(false)
 }
+
 // 文章模型
-model Article {
-    
+
+model Post {
+  id          String         @id @default(uuid())
+  title       String         @unique
+  slug        String         @unique
+  content     String
+  summary     String?
+  coverImage  String?
+  userId      String
+  status      PostStatus     @default(DRAFT)
+  visibility  PostVisibility @default(PUBLIC)
+  password    String?
+  categoryId  String
+  //tags Tag[] @relation("PostToTag") // 关联标签
+  postToTags  PostToTag[]    @relation("PostTagRelation", map: "post_posttotag_fkey") // 关联文章标签关联表
+  user        User           @relation("PostToUser", fields: [userId], references: [id], onDelete: Cascade)
+  publishTime DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedTime DateTime?
 }
 
+// 文章分类
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  tags        Tag[]    @relation("CategoryToTag", map: "category_tags_fkey") // 关联标签
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 文章标签
+model Tag {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  slug        String      @unique
+  categoryId  String
+  postToTags  PostToTag[] @relation("PostTagRelation", map: "tag_posttotag_fkey") // 关联文章标签关联表
+  category    Category    @relation("CategoryToTag", fields: [categoryId], references: [id], onDelete: Cascade)
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// 文章标签关联表
+model PostToTag {
+  post   Post   @relation("PostTagRelation", fields: [postId], references: [id], onDelete: Cascade, map: "posttotag_post_fkey")
+  postId String
+  tag    Tag    @relation("PostTagRelation", fields: [tagId], references: [id], onDelete: Cascade, map: "posttotag_tag_fkey")
+  tagId  String
+
+  @@id([postId, tagId]) // 联合主键
+}
+
+// 评论管理
+model Comment {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  nickname  String?
+  email     String?
+  content   String
+  parentId  String
+  status    CommentStatus @default(PENDING)
+  likeCount Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}

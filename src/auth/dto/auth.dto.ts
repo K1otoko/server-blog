@@ -5,3 +5,11 @@ export class LoginDto {
   code: string;
   method: 'username' | 'phone';
 }
+export class RegisterDto {
+  username: string;
+  password: string;
+  email?: string;
+  phone?: string;
+  name?: string;
+  avatar?: string;
+}
